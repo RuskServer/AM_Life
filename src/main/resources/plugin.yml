@@ -1,0 +1,22 @@
+name: AM_Life
+version: '1.0-SNAPSHOT'
+main: com.lunar_prototype.aM_Life.AM_Life
+api-version: '1.21'
+
+commands:
+  scavspawn:
+    description: this is a sample command.
+    permission: am_life.op
+    usage: /<command>
+  setmappping:
+    description: this is a sample command.
+    permission: am_life.op
+    usage: /<command>
+  setdefencepoint:
+    description: this is a sample command.
+    permission: am_life.op
+    usage: /<command>
+  spawnallscav:
+    description: this is a sample command.
+    permission: am_life.op
+    usage: /<command>
