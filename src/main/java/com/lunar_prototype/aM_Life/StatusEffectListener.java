@@ -158,6 +158,11 @@ public class StatusEffectListener implements Listener {
             // AI-2の使用開始
             startAi2Use(player, item);
         }
+        // CAT止血帯の使用ロジックをここに追加
+        if (!player.isSneaking() && isCustomItem(item, "cat")) {
+            event.setCancelled(true);
+            startCatUse(player, item);
+        }
     }
 
     private void startAi2Use(Player player, ItemStack item) {
@@ -217,6 +222,61 @@ public class StatusEffectListener implements Listener {
 
                     // 元のカスタムモデルデータに戻す
                     setCustomModelData(player, currentItem, originalModelData);
+                    isUsingItem.remove(player.getUniqueId());
+                    this.cancel();
+                    return;
+                }
+                ticksPassed++;
+            }
+        }.runTaskTimer(plugin, 0L, 1L); // 1 tickごとに実行
+    }
+
+    /**
+     * CAT止血帯の使用を開始するメソッド
+     */
+    private void startCatUse(Player player, ItemStack item) {
+        // 既存のタスクが実行中であれば何もしない（重複防止）
+        if (isUsingItem.containsKey(player.getUniqueId())) {
+            return;
+        }
+
+        // 使用中フラグを立てる
+        isUsingItem.put(player.getUniqueId(), true);
+
+        player.sendMessage("§6CAT止血帯を使用中… (3秒)");
+
+        int useTimeTicks = 3 * 20; // 3秒をtickに変換
+        int itemSlot = player.getInventory().getHeldItemSlot();
+
+        new BukkitRunnable() {
+            int ticksPassed = 0;
+
+            @Override
+            public void run() {
+                // 中断条件のチェック
+                if (player.isDead() || !player.isOnline() || player.getInventory().getHeldItemSlot() != itemSlot) {
+                    player.sendMessage("§cCAT止血帯の使用をキャンセルしました。");
+                    isUsingItem.remove(player.getUniqueId());
+                    this.cancel();
+                    return;
+                }
+
+                if (ticksPassed >= useTimeTicks) {
+                    // 使用完了
+
+                    // 重出血を治療
+                    if (statusEffectManager.hasEffect(player, StatusEffectManager.StatusEffect.HEAVY_BLEEDING)) {
+                        statusEffectManager.removeEffect(player, StatusEffectManager.StatusEffect.HEAVY_BLEEDING);
+                        player.sendMessage("§a重出血が止まった！");
+                    } else {
+                        player.sendMessage("§6重出血にかかっていません。");
+                    }
+
+                    // 効果音とメッセージ
+                    player.playSound(player.getLocation(), Sound.BLOCK_WOOL_BREAK, 1.0f, 1.0f);
+
+                    // アイテムを消費
+                    item.setAmount(item.getAmount() - 1);
                     isUsingItem.remove(player.getUniqueId());
                     this.cancel();
                     return;
