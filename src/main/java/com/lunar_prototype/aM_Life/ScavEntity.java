@@ -253,31 +253,43 @@ public class ScavEntity {
         double dz = targetLoc.getZ() - scavLoc.getZ();
         double dist = Math.sqrt(dx * dx + dz * dz);
 
-        // 方向ベクトル（正規化）
-        float dirX = 0f;
-        float dirZ = 0f;
-        if (dist > 0.01) {
-            dirX = (float) (dx / dist);
-            dirZ = (float) (dz / dist);
-        }
+        float hp = (float) entity.getHealth() / (float) entity.getMaxHealth();
+        float enemyHp = (float) target.getHealth() / (float) target.getMaxHealth();
 
-        float hp = (float) entity.getHealth();
-        float maxhp = (float) entity.getMaxHealth();
-        float enemyHp = target != null ? (float) target.getHealth() / (float) target.getMaxHealth() : 1.0f;
-
-        float[] input = new float[9];
-        input[0] = (float) (dist / 20.0); // 正規化
-        input[1] = dirX;
-        input[2] = dirZ;
-        input[3] = hp / maxhp;
-        input[4] = enemyHp;
-        input[5] = ammo / 10f;
-        input[6] = hasLineOfSight(scavLoc,targetLoc) ? 1.0f : 0.0f; // 遮蔽近く
-        input[7] = hasLineOfSight(scavLoc,targetLoc) ? 1.0f : 0.0f; // 敵が遮蔽近く
-        input[8] = entity.hasLineOfSight(target) ? 1.0f : 0.0f; // 撃てるかどうか
-
-        return input;
+        return new float[]{
+                (float) (dist / 30.0),                  // 距離（正規化）
+                (float) (dx / 30.0),                    // x差（正規化）
+                (float) (dz / 30.0),                    // z差（正規化）
+                hp,                                     // 自HP
+                enemyHp,                                // 敵HP
+                ammo / 10f,                             // 弾数
+                isNearCover(scavLoc) ? 1.0f : 0.0f,     // 自分がカバー近く
+                isNearCover(targetLoc) ? 1.0f : 0.0f,   // 敵がカバー近く
+                lineOfSight(scavLoc, targetLoc) ? 1.0f : 0.0f // LOS判定
+        };
     }
+
+    private boolean lineOfSight(Location from, Location to) {
+        if (from.getWorld() != to.getWorld()) return false;
+        return from.getWorld().rayTraceBlocks(from, to.toVector().subtract(from.toVector()).normalize(),
+                from.distance(to), FluidCollisionMode.NEVER, true) == null;
+    }
+
+    private boolean isNearCover(Location loc) {
+        World world = loc.getWorld();
+        int x = loc.getBlockX();
+        int y = loc.getBlockY();
+        int z = loc.getBlockZ();
+
+        for (int dx = -1; dx <= 1; dx++) {
+            for (int dz = -1; dz <= 1; dz++) {
+                Block block = world.getBlockAt(x + dx, y, z + dz);
+                if (block.getType().isOccluding()) return true;
+            }
+        }
+        return false;
+    }
+
 
     public boolean hasLineOfSight(Location from, Location to) {
         Vector direction = to.toVector().subtract(from.toVector()).normalize();
