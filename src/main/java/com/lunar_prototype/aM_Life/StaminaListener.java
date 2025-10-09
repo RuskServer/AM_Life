@@ -1,5 +1,6 @@
 package com.lunar_prototype.aM_Life;
 
+import org.bukkit.GameMode;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -65,6 +66,7 @@ public class StaminaListener implements Listener {
         if (player.isSprinting()) {
             if (currentStamina > 0) {
                 // スタミナを1減らす
+                if (player.getGameMode() == GameMode.CREATIVE || player.getGameMode() == GameMode.SPECTATOR) return;
                 playerStamina.put(uuid, currentStamina - 1);
             } else {
                 // スタミナが0なら走れないようにする
