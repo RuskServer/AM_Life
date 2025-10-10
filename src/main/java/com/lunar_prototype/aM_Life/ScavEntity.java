@@ -134,16 +134,28 @@ public class ScavEntity {
         }
 
         float[] input = buildStateVector(target);
-        int action = model.infer(input);
-        Bukkit.getLogger().info("SCAV AI Action = " + action);
+        int[] actions = model.inferMulti(input);
+        Bukkit.getLogger().info("SCAV AI Action = " + actions);
         System.out.println("Input state: " + Arrays.toString(input));
 
-        switch (action) {
-            case 0 -> moveTowards(target,0.1);
-            case 1 -> moveAway(target);
-            case 2 -> shoot(target);
-            case 3 -> hide();
-            case 4 -> reload();
+        int moveAction = actions[0];
+        int combatAction = actions[1];
+
+        // --- 移動系 ---
+        switch (moveAction) {
+            case 1 -> moveTowards(target, 0.1);   // 前進
+            case 2 -> moveAway(target);           // 後退
+            case 3 -> moveSide(target, -1);       // 左へ
+            case 4 -> moveSide(target, 1);        // 右へ
+            default -> stayIdle();                // 0または無効値
+        }
+
+        // --- 戦闘系 ---
+        switch (combatAction) {
+            case 1 -> shoot(target);              // 射撃
+            case 2 -> reload();                    // リロード
+            case 3 -> hide();                      // 遮蔽に移動
+            default -> {}                          // 0または無効値は何もしない
         }
     }
 
@@ -446,4 +458,27 @@ public class ScavEntity {
         return type.isOccluding() && type != Material.OAK_LEAVES && type != Material.GLASS;
     }
 
+    private void moveSide(Player target, int dir) {
+        Location scavLoc = entity.getLocation();
+        Location targetLoc = target.getLocation();
+
+        double dx = targetLoc.getX() - scavLoc.getX();
+        double dz = targetLoc.getZ() - scavLoc.getZ();
+        double dist = Math.sqrt(dx*dx + dz*dz);
+
+        if (dist < 0.01) dist = 0.01;
+
+        // 方向ベクトルに垂直なベクトルを作る
+        double sideX = -dz / dist * dir * 2;  // 左右に2ブロック移動
+        double sideZ = dx / dist * dir * 2;
+
+        Location moveLoc = scavLoc.clone().add(sideX, 0, sideZ);
+        moveLoc.setY(scavLoc.getWorld().getHighestBlockYAt(moveLoc) + 1);
+
+        entity.getPathfinder().moveTo(moveLoc, 1.0);
+    }
+
+    private void stayIdle() {
+        // その場で待機
+    }
 }

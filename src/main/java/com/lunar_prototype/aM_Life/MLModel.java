@@ -23,25 +23,45 @@ public class MLModel {
         }
     }
 
-    public int infer(float[] input) {
+    /**
+     * MultiDiscrete対応の推論
+     * @param input 状態ベクトル
+     * @return [move_action, combat_action]
+     */
+    public int[] inferMulti(float[] input) {
         try {
             OnnxTensor tensor = OnnxTensor.createTensor(env, new float[][]{input});
             OrtSession.Result result = session.run(Collections.singletonMap("state", tensor));
 
+            // MultiDiscreteならoutputは複数のQ値配列の組になっている
+            // 例: shape = [1, move_action_size + combat_action_size]
             float[][] output = (float[][]) result.get(0).getValue();
             float[] logits = output[0];
 
-            System.out.println("output state: " + Arrays.toString(output));
+            System.out.println("output state: " + Arrays.toString(logits));
 
-            int maxIndex = 0;
-            for (int i = 1; i < logits.length; i++) {
-                if (logits[i] > logits[maxIndex]) maxIndex = i;
-            }
+            // --- move_action と combat_action に分割 ---
+            int MOVE_ACTION_SIZE = 5;   // 前進, 後退, 左, 右, 待機(0)
+            int COMBAT_ACTION_SIZE = 4; // 射撃, リロード, 隠れる, 待機(0)
 
-            return maxIndex;
+            float[] moveQ = Arrays.copyOfRange(logits, 0, MOVE_ACTION_SIZE);
+            float[] combatQ = Arrays.copyOfRange(logits, MOVE_ACTION_SIZE, MOVE_ACTION_SIZE + COMBAT_ACTION_SIZE);
+
+            int moveAction = argMax(moveQ);
+            int combatAction = argMax(combatQ);
+
+            return new int[]{moveAction, combatAction};
         } catch (Exception e) {
             e.printStackTrace();
-            return 0;
+            return new int[]{0, 0};
         }
+    }
+
+    private int argMax(float[] array) {
+        int maxIndex = 0;
+        for (int i = 1; i < array.length; i++) {
+            if (array[i] > array[maxIndex]) maxIndex = i;
+        }
+        return maxIndex;
     }
 }
