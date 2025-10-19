@@ -6,11 +6,8 @@ import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPlayerInfo;
 import com.github.retrooper.packetevents.PacketEvents;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPlayerInfoUpdate;
-import com.lunar_prototype.aM_Life.commands.Scavspawn;
+import com.lunar_prototype.aM_Life.commands.*;
 import com.lunar_prototype.aM_Life.ScavManager;
-import com.lunar_prototype.aM_Life.commands.SetDefencePointCommand;
-import com.lunar_prototype.aM_Life.commands.SetMapping;
-import com.lunar_prototype.aM_Life.commands.SpawnAllScavCommand;
 import com.lunar_prototype.aM_Life.event.WeaponEvent;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -25,10 +22,13 @@ public final class AM_Life extends JavaPlugin {
 
     private StaminaListener staminaListener;
     private StatusEffectManager statusEffectManager;
+    private hideout Hideout;
 
     public static AM_Life getInstance() {
         return instance;
     }
+
+    public hideout getHideout() {return Hideout;}
 
     @Override
     public void onEnable() {
@@ -39,6 +39,7 @@ public final class AM_Life extends JavaPlugin {
         }
         instance = this;
         staminaListener = new StaminaListener();
+        Hideout = new hideout();
         SetMapping setMapping = new SetMapping(this);
         ScavManager scavManager = new ScavManager(this);
         Bukkit.getPluginManager().registerEvents(new WeaponEvent(scavManager),this);
@@ -48,10 +49,12 @@ public final class AM_Life extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new StatusEffectListener(this, statusEffectManager), this);
         scavManager.startScavController();
         scavManager.startScavChunkLoad();
+        Hideout.loadHideoutData();
         getCommand("scavspawn").setExecutor(new Scavspawn(scavManager));
         getCommand("setmappping").setExecutor(new SetMapping(this));
         getCommand("setdefencepoint").setExecutor(new SetDefencePointCommand(this));
         getCommand("spawnallscav").setExecutor(new SpawnAllScavCommand(this,scavManager));
+        getCommand("hideout").setExecutor(new HideoutCommand(this));
 
         if (getServer().getPluginManager().getPlugin("PlaceholderAPI") != null) {
             new StaminaPlaceholder(staminaListener,statusEffectManager).register();
@@ -81,5 +84,6 @@ public final class AM_Life extends JavaPlugin {
     @Override
     public void onDisable() {
         // Plugin shutdown logic
+        Hideout.saveHideoutData();
     }
 }

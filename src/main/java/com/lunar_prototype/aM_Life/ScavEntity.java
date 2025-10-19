@@ -112,7 +112,7 @@ public class ScavEntity {
             boolean moved = false;
 
             while (attempts < 10 && !moved) {
-                Location potential = patrolPoints.get(new Random().nextInt(patrolPoints.size()));
+                Location potential = getRandomNearbyPatrolPoint(entity.getLocation(),50);
 
                 // 必要ならここで isValidTarget(potential) のようなチェックも追加
                 moved = entity.getPathfinder().moveTo(potential);
@@ -135,7 +135,7 @@ public class ScavEntity {
 
         float[] input = buildStateVector(target);
         int[] actions = model.inferMulti(input);
-        Bukkit.getLogger().info("SCAV AI Action = " + actions);
+        Bukkit.getLogger().info("SCAV AI Action = " + actions[0] + " combat_action =" + actions[1]);
         System.out.println("Input state: " + Arrays.toString(input));
 
         int moveAction = actions[0];

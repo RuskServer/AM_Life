@@ -20,3 +20,7 @@ commands:
     description: this is a sample command.
     permission: am_life.op
     usage: /<command>
+  hideout:
+    description: this is a sample command.
+    permission: am_life.op
+    usage: /<command>

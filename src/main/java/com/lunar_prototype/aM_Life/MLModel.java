@@ -28,24 +28,23 @@ public class MLModel {
      * @param input 状態ベクトル
      * @return [move_action, combat_action]
      */
+    /**
+     * MultiDiscrete対応の推論 (ONNXモデルが出力を2つ返す場合)
+     */
     public int[] inferMulti(float[] input) {
         try {
             OnnxTensor tensor = OnnxTensor.createTensor(env, new float[][]{input});
             OrtSession.Result result = session.run(Collections.singletonMap("state", tensor));
 
-            // MultiDiscreteならoutputは複数のQ値配列の組になっている
-            // 例: shape = [1, move_action_size + combat_action_size]
-            float[][] output = (float[][]) result.get(0).getValue();
-            float[] logits = output[0];
+            // 出力0 = move_head、出力1 = combat_head
+            float[][] moveOutput = (float[][]) result.get(0).getValue();
+            float[][] combatOutput = (float[][]) result.get(1).getValue();
 
-            System.out.println("output state: " + Arrays.toString(logits));
+            float[] moveQ = moveOutput[0];
+            float[] combatQ = combatOutput[0];
 
-            // --- move_action と combat_action に分割 ---
-            int MOVE_ACTION_SIZE = 5;   // 前進, 後退, 左, 右, 待機(0)
-            int COMBAT_ACTION_SIZE = 4; // 射撃, リロード, 隠れる, 待機(0)
-
-            float[] moveQ = Arrays.copyOfRange(logits, 0, MOVE_ACTION_SIZE);
-            float[] combatQ = Arrays.copyOfRange(logits, MOVE_ACTION_SIZE, MOVE_ACTION_SIZE + COMBAT_ACTION_SIZE);
+            System.out.println("moveQ:   " + Arrays.toString(moveQ));
+            System.out.println("combatQ: " + Arrays.toString(combatQ));
 
             int moveAction = argMax(moveQ);
             int combatAction = argMax(combatQ);
