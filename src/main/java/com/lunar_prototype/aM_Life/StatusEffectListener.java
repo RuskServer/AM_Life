@@ -159,7 +159,7 @@ public class StatusEffectListener implements Listener {
             startAi2Use(player, item);
         }
         // CAT止血帯の使用ロジックをここに追加
-        if (!player.isSneaking() && isCustomItem(item, "cat")) {
+        if (!player.isSneaking() && isCustomItem(item, "CAT")) {
             event.setCancelled(true);
             startCatUse(player, item);
         }
@@ -265,12 +265,9 @@ public class StatusEffectListener implements Listener {
                     // 使用完了
 
                     // 重出血を治療
-                    if (statusEffectManager.hasEffect(player, StatusEffectManager.StatusEffect.HEAVY_BLEEDING)) {
-                        statusEffectManager.removeEffect(player, StatusEffectManager.StatusEffect.HEAVY_BLEEDING);
-                        player.sendMessage("§a重出血が止まった！");
-                    } else {
-                        player.sendMessage("§6重出血にかかっていません。");
-                    }
+                    statusEffectManager.removeEffect(player, StatusEffectManager.StatusEffect.HEAVY_BLEEDING);
+                    statusEffectManager.removeEffect(player, StatusEffectManager.StatusEffect.LIGHT_BLEEDING);
+                    player.sendMessage("§a出血が止まった！");
 
                     // 効果音とメッセージ
                     player.playSound(player.getLocation(), Sound.BLOCK_WOOL_BREAK, 1.0f, 1.0f);

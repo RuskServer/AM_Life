@@ -50,7 +50,7 @@ public class HideoutCommand implements CommandExecutor {
             }
 
             // 📍相対位置を適用（x+2, y+3, z-6）
-            Location teleportLoc = new Location(world, x + 2, y + 3, z - 6);
+            Location teleportLoc = new Location(world, x + 2, y + 3, z - 6.5);
 
             player.teleport(teleportLoc);
             player.sendMessage("§aあなたのHideoutへ移動しました。");
