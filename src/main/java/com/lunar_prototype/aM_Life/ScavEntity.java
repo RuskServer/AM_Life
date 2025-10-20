@@ -5,10 +5,12 @@ import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Pillager;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
 
 import java.io.File;
@@ -275,8 +277,8 @@ public class ScavEntity {
                 hp,                                     // 自HP
                 enemyHp,                                // 敵HP
                 ammo / 10f,                             // 弾数
-                isNearCover(scavLoc) ? 1.0f : 0.0f,     // 自分がカバー近く
-                isNearCover(targetLoc) ? 1.0f : 0.0f,   // 敵がカバー近く
+                isNearCover(scavLoc,target) ? 1.0f : 0.0f,     // 自分がカバー近く
+                isNearCover(targetLoc,entity) ? 1.0f : 0.0f,   // 敵がカバー近く
                 lineOfSight(scavLoc, targetLoc) ? 1.0f : 0.0f // LOS判定
         };
     }
@@ -287,16 +289,47 @@ public class ScavEntity {
                 from.distance(to), FluidCollisionMode.NEVER, true) == null;
     }
 
-    private boolean isNearCover(Location loc) {
+    private boolean isNearCover(Location loc, LivingEntity target) {
+        if (loc == null || target == null) return false;
         World world = loc.getWorld();
-        int x = loc.getBlockX();
-        int y = loc.getBlockY();
-        int z = loc.getBlockZ();
+        if (world == null) return false;
 
-        for (int dx = -1; dx <= 1; dx++) {
-            for (int dz = -1; dz <= 1; dz++) {
-                Block block = world.getBlockAt(x + dx, y, z + dz);
-                if (block.getType().isOccluding()) return true;
+        Vector dirToTarget = target.getLocation().toVector().subtract(loc.toVector()).normalize();
+
+        int radius = 3;   // 探索範囲
+        int height = 2;   // 探索高さ
+        double viewAngle = Math.toRadians(60); // 前方±60°
+
+        for (int dx = -radius; dx <= radius; dx++) {
+            for (int dz = -radius; dz <= radius; dz++) {
+                for (int dy = 0; dy <= height; dy++) {
+                    Block block = world.getBlockAt(
+                            loc.getBlockX() + dx,
+                            loc.getBlockY() + dy,
+                            loc.getBlockZ() + dz
+                    );
+
+                    if (!block.getType().isOccluding()) continue;
+
+                    Vector blockCenter = block.getLocation().add(0.5, 0.5, 0.5).toVector();
+                    Vector dirToBlock = blockCenter.clone().subtract(loc.toVector()).normalize();
+
+                    double angle = dirToBlock.angle(dirToTarget);
+                    if (angle < viewAngle) {
+                        // 実際にターゲットとの間に遮蔽物があるかチェック
+                        RayTraceResult trace = world.rayTraceBlocks(
+                                loc.clone().add(0, 1.5, 0), // 視点
+                                target.getLocation().clone().add(0, 1.5, 0).toVector().subtract(loc.toVector()),
+                                loc.distance(target.getLocation()),
+                                FluidCollisionMode.NEVER,
+                                true
+                        );
+                        if (trace != null && trace.getHitBlock() != null) {
+                            // 遮蔽あり
+                            return true;
+                        }
+                    }
+                }
             }
         }
         return false;
