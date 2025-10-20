@@ -279,7 +279,11 @@ public class ScavEntity {
                 ammo / 10f,                             // 弾数
                 isNearCover(scavLoc,target) ? 1.0f : 0.0f,     // 自分がカバー近く
                 isNearCover(targetLoc,entity) ? 1.0f : 0.0f,   // 敵がカバー近く
-                lineOfSight(scavLoc, targetLoc) ? 1.0f : 0.0f // LOS判定
+                lineOfSight(scavLoc, targetLoc) ? 1.0f : 0.0f,// LOS判定
+                coverDensity(scavLoc, 2),
+                coverDensity(targetLoc, 2),
+                angleTo(targetLoc, scavLoc),         // あるいは自分→敵
+                angleToNearestCover(scavLoc)
         };
     }
 
@@ -513,5 +517,46 @@ public class ScavEntity {
 
     private void stayIdle() {
         // その場で待機
+    }
+
+    private float coverDensity(Location loc, int radius) {
+        int count = 0;
+        int total = 0;
+        World world = loc.getWorld();
+        int x0 = loc.getBlockX();
+        int z0 = loc.getBlockZ();
+        for (int dx = -radius; dx <= radius; dx++) {
+            for (int dz = -radius; dz <= radius; dz++) {
+                total++;
+                Block block = world.getBlockAt(x0 + dx, loc.getBlockY(), z0 + dz);
+                if (block.getType().isOccluding()) count++;
+            }
+        }
+        return (float) count / total;
+    }
+
+    private float angleTo(Location from, Location to) {
+        double dx = to.getX() - from.getX();
+        double dz = to.getZ() - from.getZ();
+        return (float) Math.atan2(dz, dx); // -π ～ π
+    }
+
+    public float angleToNearestCover(Location from) {
+        double minDist = Double.MAX_VALUE;
+        Location nearest = null;
+        for (int dx = -5; dx <= 5; dx++) {
+            for (int dz = -5; dz <= 5; dz++) {
+                Block block = from.getWorld().getBlockAt(from.getBlockX()+dx, from.getBlockY(), from.getBlockZ()+dz);
+                if (block.getType().isOccluding()) {
+                    double dist = block.getLocation().distanceSquared(from);
+                    if (dist < minDist) {
+                        minDist = dist;
+                        nearest = block.getLocation();
+                    }
+                }
+            }
+        }
+        if (nearest == null) return 0f;
+        return angleTo(from, nearest);
     }
 }
