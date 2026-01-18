@@ -91,10 +91,10 @@ public class StatusEffectListener implements Listener {
             public void run() {
                 // プレイヤーが重出血または軽出血にかかっているかチェック
                 if (statusEffectManager.hasEffect(player, StatusEffectManager.StatusEffect.HEAVY_BLEEDING)) {
-                    player.addPotionEffect(new PotionEffect(PotionEffectType.INSTANT_DAMAGE, 1, 2, true, false));
+                    player.damage(10.0);
                     player.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 22, 1, true, false));
                 } else if (statusEffectManager.hasEffect(player, StatusEffectManager.StatusEffect.LIGHT_BLEEDING)) {
-                    player.addPotionEffect(new PotionEffect(PotionEffectType.INSTANT_DAMAGE, 1, 1, true, false));
+                    player.damage(5.0);
                 } else {
                     // どちらの出血状態でもなければタスクをキャンセル
                     this.cancel();

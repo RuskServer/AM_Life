@@ -39,6 +39,7 @@ public class ScavManager {
         scav.setCustomNameVisible(false); //カスタムネームタグ無効化
         scav.setRemoveWhenFarAway(false);
         scav.setPersistent(true);
+        scav.setRemoveWhenFarAway(false); // 遠くに行っても消さない
         NamespacedKey scavKey = new NamespacedKey(plugin, "isScav");
         scav.getPersistentDataContainer().set(scavKey, PersistentDataType.BYTE, (byte) 1);
         Mob nmsMob = ((CraftMob) scav).getHandle();
@@ -82,17 +83,20 @@ public class ScavManager {
             @Override
             public void run() {
                 for (ScavEntity scav : scavMap.values()) {
-                    if (scav.isDead()) continue;
+                    if (scav.isDead() || !scav.getEntity().isValid()) continue;
+
                     Location loc = scav.getEntity().getLocation();
-                    Chunk chunk = loc.getChunk();
-                    if (!chunk.isLoaded()) {
-                        chunk.load(true);
+                    // チャンクを強制的にロード状態に保つ
+                    if (!loc.getChunk().isLoaded()) {
+                        loc.getChunk().load();
                     }
-                    chunk.addPluginChunkTicket(plugin); // ← これを毎tickやると完璧
+                    // 1.20+ 等ではチケットの維持が有効
+                    loc.getChunk().addPluginChunkTicket(plugin);
                 }
             }
-        }.runTaskTimer(AM_Life.getInstance(), 0L, 1L);
+        }.runTaskTimer(plugin, 0L, 20L); // 1秒(20tick)おきで十分です
     }
+
     public Collection<ScavEntity> getActiveScavs() {
         return scavMap.values();
     }

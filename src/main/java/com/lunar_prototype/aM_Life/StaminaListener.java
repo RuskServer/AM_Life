@@ -115,10 +115,10 @@ public class StaminaListener implements Listener {
 
                     if (isStill) {
                         // 完全に停止している時
-                        regenAmount = 4;
+                        regenAmount = 2;
                     } else {
                         // 歩いている時
-                        regenAmount = 2;
+                        regenAmount = 1;
                     }
 
                     if (regenAmount > 0) {
@@ -127,7 +127,7 @@ public class StaminaListener implements Listener {
                     }
                 }
             }
-        }.runTaskTimer(AM_Life.getInstance(), 0L, 10L); // 0.5秒ごとに実行
+        }.runTaskTimer(AM_Life.getInstance(), 0L, 1L); // 0.5秒ごとに実行
     }
 
     // 他のイベントハンドラーは元のコードのままでOK
